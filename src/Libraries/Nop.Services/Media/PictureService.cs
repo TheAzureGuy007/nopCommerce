@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
+using Microsoft.AspNetCore.Http;
 using Nop.Core;
 using Nop.Core.Data;
 using Nop.Core.Domain.Catalog;
@@ -45,6 +46,7 @@ namespace Nop.Services.Media
         private readonly IUrlRecordService _urlRecordService;
         private readonly IWebHelper _webHelper;
         private readonly MediaSettings _mediaSettings;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
         #endregion
 
@@ -61,7 +63,8 @@ namespace Nop.Services.Media
             ISettingService settingService,
             IUrlRecordService urlRecordService,
             IWebHelper webHelper,
-            MediaSettings mediaSettings)
+            MediaSettings mediaSettings,
+            IHttpContextAccessor httpContextAccessor)
         {
             _dataProvider = dataProvider;
             _dbContext = dbContext;
@@ -75,6 +78,7 @@ namespace Nop.Services.Media
             _urlRecordService = urlRecordService;
             _webHelper = webHelper;
             _mediaSettings = mediaSettings;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         #endregion
@@ -249,6 +253,26 @@ namespace Nop.Services.Media
         }
 
         /// <summary>
+        /// Get images path URL 
+        /// </summary>
+        /// <param name="storeLocation">Store location URL; null to use determine the current store location automatically</param>
+        /// <returns></returns>
+        protected virtual string GetImagesPathUrl(string storeLocation = null)
+        {
+            var pathBase = _httpContextAccessor.HttpContext.Request.PathBase.Value ?? string.Empty ;
+
+            var imagesPathUrl = _mediaSettings.UseAbsoluteImagePath ? storeLocation : $"{pathBase}/";
+
+            imagesPathUrl = string.IsNullOrEmpty(imagesPathUrl)
+                ? _webHelper.GetStoreLocation()
+                : imagesPathUrl;
+
+            imagesPathUrl += "images/";
+
+            return imagesPathUrl;
+        }
+
+        /// <summary>
         /// Get picture (thumb) URL 
         /// </summary>
         /// <param name="thumbFileName">Filename</param>
@@ -256,13 +280,7 @@ namespace Nop.Services.Media
         /// <returns>Local picture thumb path</returns>
         protected virtual string GetThumbUrl(string thumbFileName, string storeLocation = null)
         {
-            storeLocation = _mediaSettings.UseAbsoluteImagePath ? storeLocation : "/";
-
-            storeLocation = string.IsNullOrEmpty(storeLocation)
-                                    ? _webHelper.GetStoreLocation()
-                                    : storeLocation;
-
-            var url = storeLocation + "images/thumbs/";
+            var url = GetImagesPathUrl(storeLocation) + "thumbs/";
 
             if (_mediaSettings.MultipleThumbDirectories)
             {
@@ -466,12 +484,8 @@ namespace Nop.Services.Media
 
             if (targetSize == 0)
             {
-                storeLocation = _mediaSettings.UseAbsoluteImagePath ? storeLocation : "/";
+                var url = GetImagesPathUrl(storeLocation) + defaultImageFileName;
 
-                var url = (string.IsNullOrEmpty(storeLocation)
-                                 ? _webHelper.GetStoreLocation()
-                                 : storeLocation)
-                                 + "images/" + defaultImageFileName;
                 return url;
             }
             else

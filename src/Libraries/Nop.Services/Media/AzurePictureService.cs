@@ -1,6 +1,7 @@
-using System;
+﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
 using Nop.Core;
@@ -53,7 +54,7 @@ namespace Nop.Services.Media
             IUrlRecordService urlRecordService,
             IWebHelper webHelper,
             MediaSettings mediaSettings,
-            NopConfig config)
+            NopConfig config, IHttpContextAccessor httpContextAccessor)
             : base(dataProvider,
                   dbContext,
                   eventPublisher,
@@ -65,7 +66,7 @@ namespace Nop.Services.Media
                   settingService,
                   urlRecordService,
                   webHelper,
-                  mediaSettings)
+                  mediaSettings, httpContextAccessor)
         {
             _cacheManager = cacheManager;
             _mediaSettings = mediaSettings;
