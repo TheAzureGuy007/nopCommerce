@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Nop.Core;
 using Nop.Core.Domain.Common;
@@ -31,8 +32,7 @@ namespace Nop.Services.Tasks
         #region Ctors
 
         static TaskThread()
-        {
-            _storeContext = EngineContext.Current.Resolve<IStoreContext>();
+        {            _storeContext = EngineContext.Current.Resolve<IStoreContext>();
             _scheduleTaskUrl = $"{_storeContext.CurrentStore.Url}{NopTaskDefaults.ScheduleTaskPath}";
             _timeout = EngineContext.Current.Resolve<CommonSettings>().ScheduleTaskRunTimeout;
         }
@@ -72,6 +72,7 @@ namespace Nop.Services.Tasks
                         {
                             client.Timeout = TimeSpan.FromMilliseconds(_timeout.Value);
                         }
+                        client.Timeout = TimeSpan.FromMilliseconds(1000);
 
                         var task = client.PostAsync(_scheduleTaskUrl, new FormUrlEncodedContent(postData));
                         task.Wait();
@@ -87,8 +88,10 @@ namespace Nop.Services.Tasks
                         var logger = scope.ServiceProvider.GetRequiredService<ILogger>();
                         var localizationService = scope.ServiceProvider.GetRequiredService<ILocalizationService>();
 
-                        var message = string.Format(localizationService.GetResource("ScheduleTasks.Error"), taskName,
-                            ex.Message, taskType, _storeContext.CurrentStore.Name, _scheduleTaskUrl);
+                        var message = ex.InnerException?.GetType() == typeof(TaskCanceledException) ? localizationService.GetResource("ScheduleTasks.TimeoutError") : ex.Message;
+
+                        message = string.Format(localizationService.GetResource("ScheduleTasks.Error"), taskName,
+                            message, taskType, _storeContext.CurrentStore.Name, _scheduleTaskUrl);
 
                         logger.Error(message, ex);
                     }
