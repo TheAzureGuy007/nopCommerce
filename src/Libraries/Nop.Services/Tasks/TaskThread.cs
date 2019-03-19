@@ -72,7 +72,6 @@ namespace Nop.Services.Tasks
                         {
                             client.Timeout = TimeSpan.FromMilliseconds(_timeout.Value);
                         }
-                        client.Timeout = TimeSpan.FromMilliseconds(1000);
 
                         var task = client.PostAsync(_scheduleTaskUrl, new FormUrlEncodedContent(postData));
                         task.Wait();
